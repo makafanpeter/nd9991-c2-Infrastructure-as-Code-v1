@@ -1,0 +1,103 @@
+# Description: >
+#   something cool
+# Parameters:
+#   myVPC:
+#       Description: VPC used to deploy our resources below
+#       Type: AWS::EC2::VPC::Id
+#   PublicSubnet:
+#       Description: Subnet to be used for our Web Server
+#       Type: AWS::EC2::Subnet::Id
+#   AMItoUse:
+#       Description: AMI to use for our base image
+#       Type: String
+# Resources:
+#   # UdacityVPN:
+    
+#   #   Type: AWS::EC2::VPC
+#   #   Properties:
+#   #     CidrBlock: 10.0.0.0/16
+#   #     EnableDnsHostnames: true
+#   #     Tags:
+#   #     - Key: name
+#   #       Value: myfirsttestvpc
+#   MyWebAccessSecurityGroup:
+#     Type: AWS::EC2::SecurityGroup
+#     Properties: 
+#       GroupDescription: My security group
+#       GroupName: MyGroupName
+#       # SecurityGroupEgress: 
+#       #   - Egress
+#       SecurityGroupIngress: 
+#         - IpProtocol: tcp
+#           FromPort: 80
+#           ToPort: 80
+#           CidrIp: 0.0.0.0/0
+#       Tags: 
+#         - MySG
+#       # VpcId: String
+
+#   MyWebServerInstance:
+#     Type: AWS::EC2::Instance
+#     Properties: 
+#       ImageId: ami-0b0dcb5067f052a63
+#       InstanceType: t3.micro
+#       Tags: 
+#         - Tag
+#       Volumes: 
+#         - Volume
+#       UserData:
+#         Fn::Base64: !Sub |
+#           #!/bin/bash
+#           sudo yum update -y
+#           sudo yum install -y httpd
+#           sudo systemctl start httpd
+#           sudo systemctl enable httpd
+  
+Parameters:
+  myVPC:
+      Description: VPC used to deploy our resources below
+      Type: AWS::EC2::VPC::Id
+      Default: vpc-07868ae7afe453339
+  PublicSubnet:
+      Description: Subnet to be used for our Web Server
+      Type: AWS::EC2::Subnet::Id
+      Default: subnet-01749e170672cba79
+  AMItoUse:
+      Description: AMI to use for our base image
+      Default: ami-0b0dcb5067f052a63
+      Type: String
+Resources:
+  myWebAccessSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+        GroupDescription: Allow http to our test host
+        VpcId:
+          Ref: myVPC
+        SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+  myWebServerInstance: 
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t3.micro
+      ImageId: !Ref AMItoUse
+      NetworkInterfaces: 
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "myWebAccessSecurityGroup"
+          SubnetId: 
+            Ref: "PublicSubnet"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          yum install -y httpd
+          systemctl start httpd
